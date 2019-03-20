@@ -3,10 +3,41 @@ import { GraphQLServer } from 'graphql-yoga';
 // Scalar types (primitive types) - String, Boolean, Int, Float
 // Non scalar types (reference types) - Objects and Arrays
 
+const users = [{
+  id: '1',
+  name: 'Leonardo',
+  email: 'leonardo@mail.com',
+}, {
+  id: '2',
+  name: 'Rafael',
+  email: 'rafael@mail.com',
+}, {
+  id: '3',
+  name: 'Diogo',
+  email: 'diogo@mail.com',
+}];
+
+const posts = [{
+  id: '1',
+  title: 'i love video games',
+  body: 'looking forward to play Sekiro',
+  isPublished: true,
+}, {
+  id: '2',
+  title: 'a post about potatoes',
+  body: 'and that is it',
+  isPublished: false,
+}, {
+  id: '3',
+  title: 'Tyler 1',
+  body: 'is good ok',
+  isPublished: true,
+}];
+
 const typeDefs = `
   type Query {
-    add(numbers: [Float!]!): Float!
-    greeting(name: String!, position: String!): String!
+    users(query: String): [User!]!
+    posts(query: String): [Post!]!
     me: User!
     post: Post!
   }
@@ -28,19 +59,30 @@ const typeDefs = `
 
 const resolvers = {
   Query: {
-    add: (parent, args, context, info) => {
-      const { numbers } = args;
-      if (!numbers.length) return 0;
+    users: (parent, args, context, info) => {
+      const { query } = args;
+      if (!query) return users;
 
-      return numbers.reduce((accumulator, currentValue) => accumulator + currentValue);
+      return users.filter(user =>
+        user.name.toLowerCase()
+          .includes(query.toLowerCase())
+      );
     },
-    greeting: (parent, args, context, info) => {
-      const { name, position } = args;
-      if (name && position) {
-        return `Hello ${name}, you are my favorite ${position}!`;
-      }
+    posts: (parent, args, context, info) => {
+      const { query } = args;
+      const hasQuery = !!query;
+      if (!hasQuery) return posts;
 
-      return 'Hello!';
+      const format = string => string.toLowerCase().trim();
+      const formattedQuery = format(query);
+
+      return posts.filter(post => {
+        const { title, body } = post;
+
+        return [ title, body ]
+          .map(field => format(field))
+          .some(formattedField => formattedField.includes(formattedQuery));
+      });
     },
     me: () => ({
       id: 123,
