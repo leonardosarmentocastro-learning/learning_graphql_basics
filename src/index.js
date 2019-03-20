@@ -4,15 +4,15 @@ import { GraphQLServer } from 'graphql-yoga';
 // Non scalar types (reference types) - Objects and Arrays
 
 const users = [{
-  id: '1',
+  id: '11',
   name: 'Leonardo',
   email: 'leonardo@mail.com',
 }, {
-  id: '2',
+  id: '22',
   name: 'Rafael',
   email: 'rafael@mail.com',
 }, {
-  id: '3',
+  id: '33',
   name: 'Diogo',
   email: 'diogo@mail.com',
 }];
@@ -22,16 +22,19 @@ const posts = [{
   title: 'i love video games',
   body: 'looking forward to play Sekiro',
   isPublished: true,
+  author: { id: '11' }
 }, {
   id: '2',
   title: 'a post about potatoes',
   body: 'and that is it',
   isPublished: false,
+  author: { id: '11' }
 }, {
   id: '3',
   title: 'Tyler 1',
   body: 'is good ok',
   isPublished: true,
+  author: { id: '22' }
 }];
 
 const typeDefs = `
@@ -47,6 +50,7 @@ const typeDefs = `
     title: String!
     body: String!
     isPublished: Boolean!
+    author: User!
   }
 
   type User {
@@ -54,6 +58,7 @@ const typeDefs = `
     name: String!
     email: String!
     age: Int
+    posts: [Post!]!
   }
 `;
 
@@ -70,8 +75,7 @@ const resolvers = {
     },
     posts: (parent, args, context, info) => {
       const { query } = args;
-      const hasQuery = !!query;
-      if (!hasQuery) return posts;
+      if (!query) return posts;
 
       const format = string => string.toLowerCase().trim();
       const formattedQuery = format(query);
@@ -95,6 +99,19 @@ const resolvers = {
       body: "Na sua mão",
       isPublished: true
     })
+  },
+  Post: {
+    author(parent, args, context, info) {
+      const post = parent;
+      return users.find(user => user.id === post.author.id);
+    }
+  },
+  User: {
+    // you need to refine a resolver for each field that is note a "scalar type" field
+    posts(parent, args, context, info) {
+      const user = parent;
+      return posts.filter(post => post.author.id === user.id);
+    }
   }
 };
 
