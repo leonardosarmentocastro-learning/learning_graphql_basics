@@ -37,12 +37,36 @@ const posts = [{
   author: { id: '22' }
 }];
 
+const comments = [{
+  id: '999',
+  text: 'beautiful flowers',
+  author: { id: '33' },
+}, {
+  id: '888',
+  text: 'hory shet',
+  author: { id: '33' },
+}, {
+  id: '777',
+  text: 'felling hungry',
+  author: { id: '22' },
+}];
+
 const typeDefs = `
   type Query {
+    comments(query: String): [Comment!]!
     users(query: String): [User!]!
     posts(query: String): [Post!]!
     me: User!
     post: Post!
+  }
+
+  type User {
+    id: ID!
+    name: String!
+    email: String!
+    age: Int
+    posts: [Post!]!
+    comments: [Comment!]!
   }
 
   type Post {
@@ -53,18 +77,32 @@ const typeDefs = `
     author: User!
   }
 
-  type User {
+  type Comment {
     id: ID!
-    name: String!
-    email: String!
-    age: Int
-    posts: [Post!]!
+    text: String!
+    author: User!
   }
 `;
 
 const resolvers = {
   Query: {
+    comments: (parent, args, context, info) => {
+      const { query } = args;
+      if (!query) return comments;
+
+      const normalize = (string) => string.toLowerCase().trim();
+      const normalizedQuery = normalize(query);
+
+      return comments.filter(comment => {
+        const { id, text } = comment;
+        return [ id, text ]
+          .map(value => normalize(value))
+          .some(normalizedValue => normalizedValue.includes(normalizedQuery));
+      });
+    },
     users: (parent, args, context, info) => {
+      console.log('### Query > users resolver');
+
       const { query } = args;
       if (!query) return users;
 
@@ -111,6 +149,10 @@ const resolvers = {
     posts(parent, args, context, info) {
       const user = parent;
       return posts.filter(post => post.author.id === user.id);
+    },
+    comments(user, args, context, info) {
+      console.log('### User > comments resolver', user);
+      return comments.filter(comment => comment.author.id === user.id);
     }
   }
 };
